@@ -14,6 +14,9 @@ class SinsTrackerApp:
         self.master.geometry('600x400')  # Set the window size
         self.master.configure(bg="#333333")
         
+        # Set the icon
+        self.master.iconbitmap('icon.ico')  # Path to your .ico file
+        
         self.timer = Timer(self.update_timer_label)
         self.excel_manager = ExcelManager()
         
@@ -68,8 +71,10 @@ class SinsTrackerApp:
     def pause_timer(self):
         self.timer.pause_continue()
         if self.timer._running:
+            self.stop_button.config(state=tk.NORMAL)
             self.pause_button.config(text="Pause")
         else:
+            self.stop_button.config(state=tk.DISABLED)
             self.pause_button.config(text="Continue")
 
     def stop_timer(self):
@@ -94,5 +99,3 @@ class SinsTrackerApp:
     def update_ui_after_download(self):
         tk.messagebox.showinfo("Update", "The application has been updated successfully!")
         # Other UI changes after download if necessary
-
-
