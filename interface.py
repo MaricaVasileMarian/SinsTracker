@@ -92,5 +92,7 @@ class SinsTrackerApp:
         ProjectSelector(self, "Select Project", self.excel_manager)
 
     def update_ui_after_download(self):
-        # UI changes after download if necessary
-        pass
+        tk.messagebox.showinfo("Update", "The application has been updated successfully!")
+        # Other UI changes after download if necessary
+
+

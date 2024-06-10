@@ -3,7 +3,7 @@ import os
 import zipfile
 import shutil
 
-GITHUB_API_URL = "https://github.com/MaricaVasileMarian/SinsTracker"
+GITHUB_API_URL = "https://api.github.com/repos/{owner}/{repo}/releases/latest"
 DOWNLOAD_URL = "https://github.com/{owner}/{repo}/archive/refs/tags/{tag}.zip"
 VERSION_FILE = "version.txt"
 UPDATE_FOLDER = "update_temp"
@@ -15,15 +15,28 @@ def get_current_version():
     return "0.0.0"
 
 def get_latest_release_info(owner, repo):
-    response = requests.get(GITHUB_API_URL.format(owner=owner, repo=repo))
-    response.raise_for_status()
-    return response.json()
+    try:
+        response = requests.get(GITHUB_API_URL.format(owner=owner, repo=repo))
+        response.raise_for_status()
+        print("GitHub API Response:", response.json())  # Debugging line
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching release info: {e}")
+        return None
+    except ValueError as e:
+        print(f"Error parsing JSON response: {e}")
+        print(f"Response content: {response.content}")
+        return None
 
 def download_latest_release(owner, repo, tag):
     url = DOWNLOAD_URL.format(owner=owner, repo=repo, tag=tag)
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
-    
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Error downloading the release: {e}")
+        return False
+
     os.makedirs(UPDATE_FOLDER, exist_ok=True)
     zip_path = os.path.join(UPDATE_FOLDER, f"{repo}-{tag}.zip")
     
@@ -33,6 +46,8 @@ def download_latest_release(owner, repo, tag):
     
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(UPDATE_FOLDER)
+    
+    return True
 
 def update_application():
     for item in os.listdir(UPDATE_FOLDER):
@@ -45,21 +60,27 @@ def update_application():
     shutil.rmtree(UPDATE_FOLDER)
 
 def check_for_updates(app):
-    owner = "your_github_username"
-    repo = "your_repo_name"
+    owner = "MaricaVasileMarian"  # Replace with your GitHub username
+    repo = "SinsTracker"  # Replace with your GitHub repository name
     
     try:
         current_version = get_current_version()
         release_info = get_latest_release_info(owner, repo)
+        if release_info is None:
+            return
+        
         latest_version = release_info['tag_name']
         
-        if latest_version > current_version:
-            download_latest_release(owner, repo, latest_version)
-            update_application()
-            with open(VERSION_FILE, 'w') as f:
-                f.write(latest_version)
-            app.update_ui_after_download()
-            print("Application updated to version", latest_version)
+        if latest_version != current_version:
+            print(f"New version available: {latest_version}")
+            if download_latest_release(owner, repo, latest_version):
+                update_application()
+                with open(VERSION_FILE, 'w') as f:
+                    f.write(latest_version)
+                app.update_ui_after_download()
+                print("Application updated to version", latest_version)
+            else:
+                print("Failed to download the latest release.")
         else:
             print("No updates available. You are using the latest version.")
     except Exception as e:
